@@ -1,10 +1,50 @@
+#define _USE_MATH_DEFINES
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
 #include <cmath>
+#include <fstream>
 #include "spec_func.hpp"
 
 using namespace std;
+
+double CalcRandValue(double P, double v, double a)
+{
+	double r1, r2, r3, r4, r5;
+	double x1, x2, z;
+
+	double one_seven = 1.0 / 7.0;
+	double two_seven = 2.0 / 7.0;
+
+	double seven_one_seven = pow(7, -one_seven);
+	double seven_two_seven = pow(7, two_seven);
+
+	double five_fourteen = 5.0 / 14.0;
+
+	r1 = (double)rand() / RAND_MAX;
+	r2 = (double)rand() / RAND_MAX;
+	r3 = (double)rand() / RAND_MAX;
+
+	if (r1 <= P)
+	{
+		while (true)
+		{
+			r4 = (double)rand() / RAND_MAX;
+			r5 = (double)rand() / RAND_MAX;
+			z = sqrt(-2 * log(r4)) * cos(2 * M_PI * r5);
+			x1 = seven_one_seven * z;
+			if (abs(x1) <= v)
+				if (log(r2) <= -pow(abs(x1), 7) + seven_two_seven * x1 * x1 * 0.5 - five_fourteen)
+					return x1;
+		}
+	}
+
+	x2 = v - (log(r3) / a);
+
+	if (r1 < (1.0 + P) * 0.5)
+		return x2;
+	return -x2;
+}
 
 int main()
 {
@@ -22,11 +62,14 @@ int main()
 	double a4 = a3 * a;
 	double a5 = a4 * a;
 
-
 	double one_seven = 1.0 / 7.0;
 	double two_seven = 2.0 / 7.0;
 	double three_seven = 3.0 / 7.0;
 	double five_seven = 5.0 / 7.0;
+	double five_fourteen = 5.0 / 14.0;
+
+	double seven_one_seven = pow(7, -one_seven);
+	double seven_two_seven = pow(7, two_seven);
 
 	double ev7 = exp(-v7);
 
@@ -46,22 +89,28 @@ int main()
 
 	double P = 2.0 * igamma(one_seven, v7) / (7.0 * K);
 
-	// r-i
-	srand(time(nullptr));
-	double r1, r2, r3;
-	r1 = (double)rand() / RAND_MAX;
-	r2 = (double)rand() / RAND_MAX;
-	r3 = (double)rand() / RAND_MAX;
-
 	printf("v: %e\n", v);
 	printf("variance: %e\n", variance);
 	printf("igamma2: %e\n", igamma2);
 	printf("P: %e\n", P);
 	printf("K: %e\n", K);
 
-	printf("r1: %e\nr2: %e\nr3: %e\n", r1, r2, r3);
+	double result = 0;
 
+	ofstream file;
+	file.open("data.csv");
 
+	srand(time(nullptr));
+
+	for (int i = 0; i < 100000; i++)
+	{
+		
+		result = CalcRandValue(P, v, a);
+		file << result << ';' << endl;
+		printf("%i\n", i);
+	}
+
+	file.close();
 
 	return 0;
 }
