@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES
+
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
@@ -8,7 +9,12 @@
 
 using namespace std;
 
-double CalcRandValue(double P, double v, double a)
+const int N = 6;
+const double EPS = 0.15;
+const double TETTA = 2.0;
+const double LAMBDA = 0.3;
+
+double CalcPureValue(double P, double v, double a)
 {
 	double r1, r2, r3, r4, r5;
 	double x1, x2, z;
@@ -44,6 +50,50 @@ double CalcRandValue(double P, double v, double a)
 	if (r1 < (1.0 + P) * 0.5)
 		return x2;
 	return -x2;
+}
+
+double CalcArithmeticMean(double *values)
+{
+	double result = 0;
+	for (int i = 0; i < N; i++)
+		result += values[i];
+	return result / N;
+}
+
+double CalcDispersion(double* values, double y_)
+{
+	double result = 0;
+	for (int i = 0; i < N; i++)
+		result += (values[i] - y_) * (values[i] - y_);
+	return result / N;
+}
+
+double CalcSampleMedian(double* values)
+{
+	double result = 0;
+	if (N % 2 == 0)
+		result = (values[N / 2] + values[(N / 2) - 1]) / 2.0;
+	else
+		result = values[N / 2];
+
+	return result;
+}
+
+double CalcAsymmetryCoefficient(double* values, double y_, double D)
+{
+	double result = 0;
+	for (int i = 0; i < N; i++)
+		result += (values[i] - y_) * (values[i] - y_) * (values[i] - y_);
+	return result / (N * pow(D, 1.5));
+}
+
+double CalcKurtosisCoefficient(double* values, double y_, double D)
+{
+	double result = 0;
+	for (int i = 0; i < N; i++)
+		result += (values[i] - y_) * (values[i] - y_) * (values[i] - y_) * (values[i] - y_);
+	result /= (N * D * D);
+	return result - 3;
 }
 
 int main()
@@ -95,22 +145,81 @@ int main()
 	printf("P: %e\n", P);
 	printf("K: %e\n", K);
 
-	double result = 0;
-
-	ofstream file;
-	file.open("data.csv");
-
 	srand(time(nullptr));
 
-	for (int i = 0; i < 100000; i++)
+	double pure_values[N];
+	double dirt_values[N];
+	double r, r1, r2;
+
+	ofstream file;
+	
+	file.open("data_pure.csv");
+
+
+	for (int i = 0; i < N; i++)
 	{
-		
-		result = CalcRandValue(P, v, a);
-		file << result << ';' << endl;
-		printf("%i\n", i);
+		pure_values[i] = CalcPureValue(P, v, a);
+		file << pure_values[i] << ';' << endl;
 	}
 
 	file.close();
+
+	file.open("data_dirt.csv");
+
+
+	for (int i = 0; i < N; i++)
+	{
+		dirt_values[i] = CalcPureValue(P, v, a);
+
+		r = (double)rand() / RAND_MAX;
+		if (r < EPS)
+		{
+			dirt_values[i] += TETTA;
+			dirt_values[i] *= LAMBDA;
+		}
+
+		file << dirt_values[i] << ';' << endl;
+	}
+
+	file.close();
+
+	double values[N];
+
+	values[0] = 3;
+	values[1] = 1;
+	values[2] = 5;
+	values[3] = 2;
+	values[4] = 4;
+	values[5] = 6;
+
+	qsort(values, N, sizeof(double),
+		[](const void* a, const void* b)
+		{
+			const double* x = (double*)a;
+			const double* y = (double*)b;
+
+			if (*x > *y)
+				return 1;
+			else if (*x < *y)
+				return -1;
+
+			return 0;
+		}
+	);
+
+	double y_, D, sm;
+
+	y_ = CalcArithmeticMean(values);
+
+	printf("Arithmetic Mean: %e\n", y_);
+
+	D = CalcDispersion(values, y_);
+
+	printf("Dispersion: %e\n", D);
+
+	sm = CalcSampleMedian(values);
+
+	printf("Sample Median: %e\n", sm);
 
 	return 0;
 }
