@@ -9,10 +9,12 @@
 
 using namespace std;
 
-const int N = 6;
+const int N = 8;
 const double EPS = 0.15;
 const double TETTA = 2.0;
 const double LAMBDA = 0.3;
+const double ALPHA = 0.3;
+const double DELTA = 5;
 
 double CalcPureValue(double P, double v, double a)
 {
@@ -52,6 +54,84 @@ double CalcPureValue(double P, double v, double a)
 	return -x2;
 }
 
+double CalcDistributionFunc(double x, double v, double v7, double K, double a)
+{
+	double result = 0;
+	if (abs(x) > v)
+		result = exp(-a * (abs(x) - v) - v7);
+	else
+		result = exp(pow(-abs(x), 7));
+	return result / K;
+}
+
+double CalcMLEFunc(double* values, double v, double v7, double K, double a, double tetta)
+{
+	double result = 0;
+
+	for (int i = 0; i < N; i++)
+		result += -log(CalcDistributionFunc((values[i] - tetta) / LAMBDA, v, v7, K, a));
+
+	return result / N;
+}
+
+double CalcRadicalFunc(double* values, double v, double v7, double K, double a, double tetta)
+{
+	double result = 0;
+
+	for (int i = 0; i < N; i++)
+		result += -pow(CalcDistributionFunc((values[i] - tetta) / LAMBDA, v, v7, K, a), DELTA)
+		/ //----------------------------------------------------------------------------------
+				   pow(CalcDistributionFunc((values[i] - 0)     / LAMBDA, v, v7, K, a), DELTA);
+
+	return result / N;
+}
+
+double CalcMLE(double* values, double v, double v7, double K, double a, double tetta, double eps)
+{
+	double gld = 1.6180339887498948482;
+	double n = -4;
+	double m = 20;
+
+	double x1;
+	double x2;
+
+	while (abs(m - n) > eps)
+	{
+		x1 = m - (m - n) / gld;
+		x2 = n + (m - n) / gld;
+
+		if (CalcMLEFunc(values, v, v7, K, a, x1) < CalcMLEFunc(values, v, v7, K, a, x2))
+			m = x2;
+		else
+			n = x1;
+	}
+
+	return (n + m) / 2;
+}
+
+double CalcRadical(double* values, double v, double v7, double K, double a, double tetta, double eps)
+{
+	double gld = 1.6180339887498948482;
+	double n = -4;
+	double m = 20;
+
+	double x1;
+	double x2;
+
+	while (abs(m - n) > eps)
+	{
+		x1 = m - (m - n) / gld;
+		x2 = n + (m - n) / gld;
+
+		if (CalcRadicalFunc(values, v, v7, K, a, x1) < CalcRadicalFunc(values, v, v7, K, a, x2))
+			m = x2;
+		else
+			n = x1;
+	}
+
+	return (n + m) / 2;
+}
+
 double CalcArithmeticMean(double *values)
 {
 	double result = 0;
@@ -75,7 +155,6 @@ double CalcSampleMedian(double* values)
 		result = (values[N / 2] + values[(N / 2) - 1]) / 2.0;
 	else
 		result = values[N / 2];
-
 	return result;
 }
 
@@ -94,6 +173,15 @@ double CalcKurtosisCoefficient(double* values, double y_, double D)
 		result += (values[i] - y_) * (values[i] - y_) * (values[i] - y_) * (values[i] - y_);
 	result /= (N * D * D);
 	return result - 3;
+}
+
+double CalcTrimmedMean(double* values)
+{
+	double result = 0;
+	int k = N * ALPHA;
+	for (int i = k; i < N - k; i++)
+		result += values[i];
+	return result / (N - 2 * k);
 }
 
 int main()
@@ -124,6 +212,8 @@ int main()
 	double ev7 = exp(-v7);
 
 	double K = two_seven * (igamma(one_seven, v7) + ev7 / v6);
+
+	/*
 
 	double variance = (2.0 / K) * ((igamma(three_seven, v7) * one_seven) + ev7 * ((2 / a3) +
 		                                                                          (2 * v / a2) +
@@ -182,6 +272,7 @@ int main()
 	}
 
 	file.close();
+	*/
 
 	double values[N];
 
@@ -191,6 +282,8 @@ int main()
 	values[3] = 2;
 	values[4] = 4;
 	values[5] = 6;
+	values[6] = 8;
+	values[7] = 7;
 
 	qsort(values, N, sizeof(double),
 		[](const void* a, const void* b)
@@ -207,7 +300,7 @@ int main()
 		}
 	);
 
-	double y_, D, sm;
+	double y_, D, sm, tm, MLE;
 
 	y_ = CalcArithmeticMean(values);
 
@@ -220,6 +313,14 @@ int main()
 	sm = CalcSampleMedian(values);
 
 	printf("Sample Median: %e\n", sm);
+
+	tm = CalcTrimmedMean(values);
+
+	printf("Trimmed Mean: %e\n", tm);
+
+	MLE = CalcMLE(values, v, v7, K, a, 2, 1e-5);
+
+	printf("MLE: %e\n", MLE);
 
 	return 0;
 }
