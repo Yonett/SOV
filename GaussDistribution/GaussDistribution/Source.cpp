@@ -9,7 +9,7 @@
 
 using namespace std;
 
-const int N = 8;
+const int N = 1e7;
 const double EPS = 0.15;
 const double TETTA = 2.0;
 const double LAMBDA = 0.3;
@@ -18,6 +18,7 @@ const double DELTA = 5;
 
 double CalcPureValue(double P, double v, double a)
 {
+	//printf("Calculating value..\n");
 	double r1, r2, r3, r4, r5;
 	double x1, x2, z;
 
@@ -29,29 +30,42 @@ double CalcPureValue(double P, double v, double a)
 
 	double five_fourteen = 5.0 / 14.0;
 
-	r1 = (double)rand() / RAND_MAX;
-	r2 = (double)rand() / RAND_MAX;
-	r3 = (double)rand() / RAND_MAX;
+	do {
+		r1 = (double)rand() / RAND_MAX;
+		r3 = (double)rand() / RAND_MAX;
+	} while (r1 == 0 || r3 == 0 || r1 == 1 || r3 == 1);
 
 	if (r1 <= P)
 	{
 		while (true)
 		{
-			r4 = (double)rand() / RAND_MAX;
-			r5 = (double)rand() / RAND_MAX;
+			do {
+				r4 = (double)rand() / RAND_MAX;
+				r5 = (double)rand() / RAND_MAX;
+				r2 = (double)rand() / RAND_MAX;
+			} while (r4 == 0 || r5 == 0 || r2 == 0 || r4 == 1 || r5 == 1 || r2 == 1);
+
 			z = sqrt(-2 * log(r4)) * cos(2 * M_PI * r5);
 			x1 = seven_one_seven * z;
-			if (abs(x1) <= v)
+			if (abs(x1) <= v) {
+				//printf("Not Done\n");
 				if (log(r2) <= -pow(abs(x1), 7) + seven_two_seven * x1 * x1 * 0.5 - five_fourteen)
+				{
+					//printf("Done\n");
 					return x1;
+				}
+			}
 		}
 	}
 
 	x2 = v - (log(r3) / a);
 
+	//printf("Done\n");
+
 	if (r1 < (1.0 + P) * 0.5)
 		return x2;
 	return -x2;
+	
 }
 
 double CalcDistributionFunc(double x, double v, double v7, double K, double a)
@@ -168,11 +182,11 @@ double CalcAsymmetryCoefficient(double* values, double y_, double D)
 
 double CalcKurtosisCoefficient(double* values, double y_, double D)
 {
-	double result = 0;
+	double result = 0.0;
 	for (int i = 0; i < N; i++)
 		result += (values[i] - y_) * (values[i] - y_) * (values[i] - y_) * (values[i] - y_);
 	result /= (N * D * D);
-	return result - 3;
+	return result - 3.0;
 }
 
 double CalcTrimmedMean(double* values)
@@ -213,8 +227,6 @@ int main()
 
 	double K = two_seven * (igamma(one_seven, v7) + ev7 / v6);
 
-	/*
-
 	double variance = (2.0 / K) * ((igamma(three_seven, v7) * one_seven) + ev7 * ((2 / a3) +
 		                                                                          (2 * v / a2) +
 		                                                                          (v2 / a)));
@@ -237,26 +249,26 @@ int main()
 
 	srand(time(nullptr));
 
-	double pure_values[N];
-	double dirt_values[N];
+	double* pure_values = new double[N];
+	double* dirt_values = new double[N];
 	double r, r1, r2;
 
-	ofstream file;
-	
-	file.open("data_pure.csv");
+	//ofstream file;
+	//
+	//file.open("data_pure.csv");
 
 
 	for (int i = 0; i < N; i++)
 	{
 		pure_values[i] = CalcPureValue(P, v, a);
-		file << pure_values[i] << ';' << endl;
+	//	file << pure_values[i] << ';' << endl;
 	}
 
-	file.close();
+	//file.close();
 
-	file.open("data_dirt.csv");
+	//file.open("data_dirt.csv");
 
-
+	/*
 	for (int i = 0; i < N; i++)
 	{
 		dirt_values[i] = CalcPureValue(P, v, a);
@@ -274,18 +286,18 @@ int main()
 	file.close();
 	*/
 
-	double values[N];
+	//double values[N];
 
-	values[0] = 3;
-	values[1] = 1;
-	values[2] = 5;
-	values[3] = 2;
-	values[4] = 4;
-	values[5] = 6;
-	values[6] = 8;
-	values[7] = 7;
+	//values[0] = 3;
+	//values[1] = 1;
+	//values[2] = 5;
+	//values[3] = 2;
+	//values[4] = 4;
+	//values[5] = 6;
+	//values[6] = 8;
+	//values[7] = 7;
 
-	qsort(values, N, sizeof(double),
+	qsort(pure_values, N, sizeof(double),
 		[](const void* a, const void* b)
 		{
 			const double* x = (double*)a;
@@ -300,27 +312,35 @@ int main()
 		}
 	);
 
-	double y_, D, sm, tm, MLE;
+	double y_, D, ac, kc, sm, tm, MLE;
 
-	y_ = CalcArithmeticMean(values);
+	y_ = CalcArithmeticMean(pure_values);
 
 	printf("Arithmetic Mean: %e\n", y_);
 
-	D = CalcDispersion(values, y_);
+	D = CalcDispersion(pure_values, y_);
 
 	printf("Dispersion: %e\n", D);
 
-	sm = CalcSampleMedian(values);
+	ac = CalcAsymmetryCoefficient(pure_values, y_, D);
+
+	printf("Assymetry Coefficient: %e\n", ac);
+
+	kc = CalcKurtosisCoefficient(pure_values, y_, D);
+
+	printf("Kurtosis Coefficient: %e\n", kc);
+
+	sm = CalcSampleMedian(pure_values);
 
 	printf("Sample Median: %e\n", sm);
 
-	tm = CalcTrimmedMean(values);
+	//tm = CalcTrimmedMean(values);
 
-	printf("Trimmed Mean: %e\n", tm);
+	//printf("Trimmed Mean: %e\n", tm);
 
-	MLE = CalcMLE(values, v, v7, K, a, 2, 1e-5);
+	//MLE = CalcMLE(values, v, v7, K, a, 2, 1e-5);
 
-	printf("MLE: %e\n", MLE);
+	//printf("MLE: %e\n", MLE);
 
 	return 0;
 }
