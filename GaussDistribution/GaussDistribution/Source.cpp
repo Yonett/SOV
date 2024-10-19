@@ -9,10 +9,10 @@
 
 using namespace std;
 
-const int N = 1e7;
+const int N = 1e6;
 const double EPS = 0.15;
 const double TETTA = 2.0;
-const double LAMBDA = 0.3;
+const double LAMBDA = 1;
 const double ALPHA = 0.3;
 const double DELTA = 5;
 
@@ -72,9 +72,12 @@ double CalcDistributionFunc(double x, double v, double v7, double K, double a)
 {
 	double result = 0;
 	if (abs(x) > v)
-		result = exp(-a * (abs(x) - v) - v7);
+	{
+		double tmp = -a * (abs(x) - v) - v7;
+		result = exp(tmp);
+	}
 	else
-		result = exp(pow(-abs(x), 7));
+		result = exp(-pow(abs(x), 7));
 	return result / K;
 }
 
@@ -100,11 +103,11 @@ double CalcRadicalFunc(double* values, double v, double v7, double K, double a, 
 	return result / N;
 }
 
-double CalcMLE(double* values, double v, double v7, double K, double a, double tetta, double eps)
+double CalcMLE(double* values, double v, double v7, double K, double a, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -4;
-	double m = 20;
+	double n = -5;
+	double m =  5;
 
 	double x1;
 	double x2;
@@ -123,11 +126,11 @@ double CalcMLE(double* values, double v, double v7, double K, double a, double t
 	return (n + m) / 2;
 }
 
-double CalcRadical(double* values, double v, double v7, double K, double a, double tetta, double eps)
+double CalcRadical(double* values, double v, double v7, double K, double a, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -4;
-	double m = 20;
+	double n = -5;
+	double m =  5;
 
 	double x1;
 	double x2;
@@ -260,7 +263,7 @@ int main()
 
 	for (int i = 0; i < N; i++)
 	{
-		pure_values[i] = CalcPureValue(P, v, a);
+		pure_values[i] = CalcPureValue(P, v, a) + 2;
 	//	file << pure_values[i] << ';' << endl;
 	}
 
@@ -312,7 +315,7 @@ int main()
 		}
 	);
 
-	double y_, D, ac, kc, sm, tm, MLE;
+	double y_, D, ac, kc, sm, tm, MLE, RAD;
 
 	y_ = CalcArithmeticMean(pure_values);
 
@@ -334,13 +337,17 @@ int main()
 
 	printf("Sample Median: %e\n", sm);
 
-	//tm = CalcTrimmedMean(values);
+	tm = CalcTrimmedMean(pure_values);
 
-	//printf("Trimmed Mean: %e\n", tm);
+	printf("Trimmed Mean: %e\n", tm);
 
-	//MLE = CalcMLE(values, v, v7, K, a, 2, 1e-5);
+	MLE = CalcMLE(pure_values, v, v7, K, a, 1e-5);
 
-	//printf("MLE: %e\n", MLE);
+	printf("MLE: %e\n", MLE);
+
+	RAD = CalcRadical(pure_values, v, v7, K, a, 1e-5);
+
+	printf("Radical: %e\n", RAD);
 
 	return 0;
 }
