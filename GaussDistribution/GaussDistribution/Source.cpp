@@ -14,7 +14,7 @@ const double EPS = 0.15;
 const double TETTA = 2.0;
 const double LAMBDA = 1;
 const double ALPHA = 0.3;
-const double DELTA = 5;
+const double DELTA = 3;
 
 double CalcPureValue(double P, double v, double a)
 {
@@ -95,10 +95,10 @@ double CalcRadicalFunc(double* values, double v, double v7, double K, double a, 
 {
 	double result = 0;
 
+	double divider = pow(CalcDistributionFunc(0, v, v7, K, a), DELTA);
+
 	for (int i = 0; i < N; i++)
-		result += -pow(CalcDistributionFunc((values[i] - tetta) / LAMBDA, v, v7, K, a), DELTA)
-		/ //----------------------------------------------------------------------------------
-				   pow(CalcDistributionFunc((values[i] - 0)     / LAMBDA, v, v7, K, a), DELTA);
+		result += -pow(CalcDistributionFunc((values[i] - tetta) / LAMBDA, v, v7, K, a), DELTA) / divider;
 
 	return result / N;
 }
@@ -106,8 +106,8 @@ double CalcRadicalFunc(double* values, double v, double v7, double K, double a, 
 double CalcMLE(double* values, double v, double v7, double K, double a, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -5;
-	double m =  5;
+	double n = -3;
+	double m =  3;
 
 	double x1;
 	double x2;
@@ -129,8 +129,8 @@ double CalcMLE(double* values, double v, double v7, double K, double a, double e
 double CalcRadical(double* values, double v, double v7, double K, double a, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -5;
-	double m =  5;
+	double n = -3;
+	double m =  3;
 
 	double x1;
 	double x2;
