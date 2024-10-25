@@ -9,12 +9,21 @@
 
 using namespace std;
 
-const int N = 1e6;
-const double EPS = 0.15;
-const double TETTA = 2.0;
-const double LAMBDA = 1;
-const double ALPHA = 0.3;
-const double DELTA = 3;
+const int N = 3e5;
+
+const double EPS = 0.40;                 // clogging probability
+
+const double PURE_TETTA = 0.2;           // shift for pure distribution
+const double PURE_LAMBDA = 0.5;          // scale for pure distribution
+
+const double SYM_TETTA = PURE_TETTA;     // shift for symmetrical clogging distribution
+const double SYM_LAMBDA = 2.0;           // scale for symmetrical clogging distribution
+
+const double ASYM_TETTA = 0.3;           // shift for asymmetrical clogging distribution
+const double ASYM_LAMBDA = PURE_LAMBDA;  // scale for asymmetrical clogging distribution
+
+double ALPHA = 0.0;                      // trimmed mean parameter
+double DELTA = 0.0;                      // radical function power coef
 
 double CalcPureValue(double P, double v, double a)
 {
@@ -81,33 +90,33 @@ double CalcDistributionFunc(double x, double v, double v7, double K, double a)
 	return result / K;
 }
 
-double CalcMLEFunc(double* values, double v, double v7, double K, double a, double tetta)
+double CalcMLEFunc(double* values, double v, double v7, double K, double a, double lambda, double tetta)
 {
 	double result = 0;
 
 	for (int i = 0; i < N; i++)
-		result += -log(CalcDistributionFunc((values[i] - tetta) / LAMBDA, v, v7, K, a));
+		result += -log(CalcDistributionFunc((values[i] - tetta) / lambda, v, v7, K, a));
 
 	return result / N;
 }
 
-double CalcRadicalFunc(double* values, double v, double v7, double K, double a, double tetta)
+double CalcRadicalFunc(double* values, double v, double v7, double K, double a, double lambda, double tetta)
 {
 	double result = 0;
 
 	double divider = pow(CalcDistributionFunc(0, v, v7, K, a), DELTA);
 
 	for (int i = 0; i < N; i++)
-		result += -pow(CalcDistributionFunc((values[i] - tetta) / LAMBDA, v, v7, K, a), DELTA) / divider;
+		result += -pow(CalcDistributionFunc((values[i] - tetta) / lambda, v, v7, K, a), DELTA) / divider;
 
 	return result / N;
 }
 
-double CalcMLE(double* values, double v, double v7, double K, double a, double eps)
+double CalcMLE(double* values, double v, double v7, double K, double a, double lambda, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -3;
-	double m =  3;
+	double n = -1;
+	double m =  1;
 
 	double x1;
 	double x2;
@@ -117,7 +126,7 @@ double CalcMLE(double* values, double v, double v7, double K, double a, double e
 		x1 = m - (m - n) / gld;
 		x2 = n + (m - n) / gld;
 
-		if (CalcMLEFunc(values, v, v7, K, a, x1) < CalcMLEFunc(values, v, v7, K, a, x2))
+		if (CalcMLEFunc(values, v, v7, K, a, lambda, x1) < CalcMLEFunc(values, v, v7, K, a, lambda, x2))
 			m = x2;
 		else
 			n = x1;
@@ -126,11 +135,11 @@ double CalcMLE(double* values, double v, double v7, double K, double a, double e
 	return (n + m) / 2;
 }
 
-double CalcRadical(double* values, double v, double v7, double K, double a, double eps)
+double CalcRadical(double* values, double v, double v7, double K, double a, double lambda, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -3;
-	double m =  3;
+	double n = -1;
+	double m =  1;
 
 	double x1;
 	double x2;
@@ -140,7 +149,7 @@ double CalcRadical(double* values, double v, double v7, double K, double a, doub
 		x1 = m - (m - n) / gld;
 		x2 = n + (m - n) / gld;
 
-		if (CalcRadicalFunc(values, v, v7, K, a, x1) < CalcRadicalFunc(values, v, v7, K, a, x2))
+		if (CalcRadicalFunc(values, v, v7, K, a, lambda, x1) < CalcRadicalFunc(values, v, v7, K, a, lambda, x2))
 			m = x2;
 		else
 			n = x1;
@@ -203,6 +212,8 @@ double CalcTrimmedMean(double* values)
 
 int main()
 {
+#pragma region Constants
+
 	double v = 0.9;
 	double v2 = v * v;
 	double v3 = v2 * v;
@@ -244,61 +255,54 @@ int main()
 
 	double P = 2.0 * igamma(one_seven, v7) / (7.0 * K);
 
+	printf("Constants:\n");
 	printf("v: %e\n", v);
 	printf("variance: %e\n", variance);
 	printf("igamma2: %e\n", igamma2);
 	printf("P: %e\n", P);
-	printf("K: %e\n", K);
+	printf("K: %e\n\n", K);
+
+#pragma endregion
 
 	srand(time(nullptr));
 
 	double* pure_values = new double[N];
-	double* dirt_values = new double[N];
-	double r, r1, r2;
 
-	//ofstream file;
-	//
-	//file.open("data_pure.csv");
+	double* sym_clog_values = new double[N];
+	double* sym_dirt_values = new double[N];
+
+	double* asym_clog_values = new double[N];
+	double* asym_dirt_values = new double[N];
+
+	double r = 0.0;
 
 
 	for (int i = 0; i < N; i++)
 	{
-		pure_values[i] = CalcPureValue(P, v, a) + 2;
-	//	file << pure_values[i] << ';' << endl;
+		pure_values[i] = (CalcPureValue(P, v, a) + PURE_TETTA) / PURE_LAMBDA;
 	}
-
-	//file.close();
-
-	//file.open("data_dirt.csv");
-
-	/*
+	
 	for (int i = 0; i < N; i++)
 	{
-		dirt_values[i] = CalcPureValue(P, v, a);
+		sym_clog_values[i] = (CalcPureValue(P, v, a) + SYM_TETTA) / SYM_LAMBDA;
 
 		r = (double)rand() / RAND_MAX;
 		if (r < EPS)
-		{
-			dirt_values[i] += TETTA;
-			dirt_values[i] *= LAMBDA;
-		}
-
-		file << dirt_values[i] << ';' << endl;
+			sym_dirt_values[i] = sym_clog_values[i];
+		else
+			sym_dirt_values[i] = pure_values[i];
 	}
 
-	file.close();
-	*/
+	for (int i = 0; i < N; i++)
+	{
+		asym_clog_values[i] = (CalcPureValue(P, v, a) + ASYM_TETTA) / ASYM_LAMBDA;
 
-	//double values[N];
-
-	//values[0] = 3;
-	//values[1] = 1;
-	//values[2] = 5;
-	//values[3] = 2;
-	//values[4] = 4;
-	//values[5] = 6;
-	//values[6] = 8;
-	//values[7] = 7;
+		r = (double)rand() / RAND_MAX;
+		if (r < EPS)
+			asym_dirt_values[i] = asym_clog_values[i];
+		else
+			asym_dirt_values[i] = pure_values[i];
+	}	
 
 	qsort(pure_values, N, sizeof(double),
 		[](const void* a, const void* b)
@@ -315,7 +319,41 @@ int main()
 		}
 	);
 
+	qsort(sym_dirt_values, N, sizeof(double),
+		[](const void* a, const void* b)
+		{
+			const double* x = (double*)a;
+			const double* y = (double*)b;
+
+			if (*x > *y)
+				return 1;
+			else if (*x < *y)
+				return -1;
+
+			return 0;
+		}
+	);
+
+	qsort(asym_dirt_values, N, sizeof(double),
+		[](const void* a, const void* b)
+		{
+			const double* x = (double*)a;
+			const double* y = (double*)b;
+
+			if (*x > *y)
+				return 1;
+			else if (*x < *y)
+				return -1;
+
+			return 0;
+		}
+	);
+
 	double y_, D, ac, kc, sm, tm, MLE, RAD;
+
+#pragma region Pure
+
+	printf("Pure distribution (shift: %e, scale %e):\n\n", PURE_TETTA, PURE_LAMBDA);
 
 	y_ = CalcArithmeticMean(pure_values);
 
@@ -337,17 +375,184 @@ int main()
 
 	printf("Sample Median: %e\n", sm);
 
+	ALPHA = 0.05;
 	tm = CalcTrimmedMean(pure_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
 
-	printf("Trimmed Mean: %e\n", tm);
+	ALPHA = 0.10;
+	tm = CalcTrimmedMean(pure_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
 
-	MLE = CalcMLE(pure_values, v, v7, K, a, 1e-5);
+	ALPHA = 0.15;
+	tm = CalcTrimmedMean(pure_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	MLE = CalcMLE(pure_values, v, v7, K, a, PURE_LAMBDA, 1e-5);
 
 	printf("MLE: %e\n", MLE);
 
-	RAD = CalcRadical(pure_values, v, v7, K, a, 1e-5);
+	DELTA = 0.1;
+	RAD = CalcRadical(pure_values, v, v7, K, a, PURE_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
 
-	printf("Radical: %e\n", RAD);
+	DELTA = 0.5;
+	RAD = CalcRadical(pure_values, v, v7, K, a, PURE_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 1.0;
+	RAD = CalcRadical(pure_values, v, v7, K, a, PURE_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n\n\n", DELTA, RAD);
+
+#pragma endregion
+
+#pragma region Sym Dirt
+
+	printf("Symmetrical dirt distribution (shift: %e, scale %e):\n\n", SYM_TETTA, SYM_LAMBDA);
+
+	y_ = CalcArithmeticMean(sym_dirt_values);
+
+	printf("Arithmetic Mean: %e\n", y_);
+
+	D = CalcDispersion(sym_dirt_values, y_);
+
+	printf("Dispersion: %e\n", D);
+
+	ac = CalcAsymmetryCoefficient(sym_dirt_values, y_, D);
+
+	printf("Assymetry Coefficient: %e\n", ac);
+
+	kc = CalcKurtosisCoefficient(sym_dirt_values, y_, D);
+
+	printf("Kurtosis Coefficient: %e\n", kc);
+
+	sm = CalcSampleMedian(sym_dirt_values);
+
+	printf("Sample Median: %e\n", sm);
+
+	ALPHA = 0.05;
+	tm = CalcTrimmedMean(sym_dirt_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	ALPHA = 0.10;
+	tm = CalcTrimmedMean(sym_dirt_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	ALPHA = 0.15;
+	tm = CalcTrimmedMean(sym_dirt_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	MLE = CalcMLE(sym_dirt_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+
+	printf("MLE: %e\n", MLE);
+
+	DELTA = 0.1;
+	RAD = CalcRadical(sym_dirt_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 0.5;
+	RAD = CalcRadical(sym_dirt_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 1.0;
+	RAD = CalcRadical(sym_dirt_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n\n\n", DELTA, RAD);
+
+#pragma endregion
+
+#pragma region Asym Dirt
+
+	printf("Asymmetrical dirt distribution (shift: %e, scale %e):\n\n", ASYM_TETTA, ASYM_LAMBDA);
+
+	y_ = CalcArithmeticMean(asym_dirt_values);
+
+	printf("Arithmetic Mean: %e\n", y_);
+
+	D = CalcDispersion(asym_dirt_values, y_);
+
+	printf("Dispersion: %e\n", D);
+
+	ac = CalcAsymmetryCoefficient(asym_dirt_values, y_, D);
+
+	printf("Assymetry Coefficient: %e\n", ac);
+
+	kc = CalcKurtosisCoefficient(asym_dirt_values, y_, D);
+
+	printf("Kurtosis Coefficient: %e\n", kc);
+
+	sm = CalcSampleMedian(asym_dirt_values);
+
+	printf("Sample Median: %e\n", sm);
+
+	ALPHA = 0.05;
+	tm = CalcTrimmedMean(asym_dirt_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	ALPHA = 0.10;
+	tm = CalcTrimmedMean(asym_dirt_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	ALPHA = 0.15;
+	tm = CalcTrimmedMean(asym_dirt_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	MLE = CalcMLE(asym_dirt_values, v, v7, K, a, ASYM_LAMBDA, 1e-5);
+
+	printf("MLE: %e\n", MLE);
+
+	DELTA = 0.1;
+	RAD = CalcRadical(asym_dirt_values, v, v7, K, a, ASYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 0.5;
+	RAD = CalcRadical(asym_dirt_values, v, v7, K, a, ASYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 1.0;
+	RAD = CalcRadical(asym_dirt_values, v, v7, K, a, ASYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n\n\n", DELTA, RAD);
+
+#pragma endregion
+
+#pragma region WriteToFile
+
+	ofstream file;
+
+	file.open("data_pure.csv");
+
+	for (int i = 0; i < N; i++)
+		file << pure_values[i] << ';' << endl;
+
+	file.close();
+
+	file.open("data_sym_clog.csv");
+
+	for (int i = 0; i < N; i++)
+		file << sym_clog_values[i] << ';' << endl;
+
+	file.close();
+
+	file.open("data_sym_dirt.csv");
+
+	for (int i = 0; i < N; i++)
+		file << sym_dirt_values[i] << ';' << endl;
+
+	file.close();
+
+	file.open("data_asym_clog.csv");
+
+	for (int i = 0; i < N; i++)
+		file << asym_clog_values[i] << ';' << endl;
+
+	file.close();
+
+	file.open("data_asym_dirt.csv");
+
+	for (int i = 0; i < N; i++)
+		file << asym_dirt_values[i] << ';' << endl;
+
+	file.close();
+
+#pragma endregion
 
 	return 0;
 }
