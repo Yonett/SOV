@@ -158,6 +158,20 @@ double CalcRadical(double* values, double v, double v7, double K, double a, doub
 	return (n + m) / 2;
 }
 
+double CalcMLEIF()
+{
+	double result = 0.0;
+
+	return result;
+}
+
+double CalcRadicalIF()
+{
+	double result = 0.0;
+
+	return result;
+}
+
 double CalcArithmeticMean(double *values)
 {
 	double result = 0;
@@ -275,7 +289,6 @@ int main()
 	double* asym_dirt_values = new double[N];
 
 	double r = 0.0;
-
 
 	for (int i = 0; i < N; i++)
 	{
