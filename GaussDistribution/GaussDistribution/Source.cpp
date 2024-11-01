@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES
+//#define _WRITE
 
 #include <cstdlib>
 #include <ctime>
@@ -9,7 +10,7 @@
 
 using namespace std;
 
-const int N = 3e5;
+const int N = 3e6;
 
 const double EPS = 0.40;                 // clogging probability
 
@@ -526,6 +527,7 @@ int main()
 
 #pragma endregion
 
+#ifdef _WRITE
 #pragma region WriteToFile
 
 	ofstream file;
@@ -566,6 +568,7 @@ int main()
 	file.close();
 
 #pragma endregion
+#endif
 
 	return 0;
 }
