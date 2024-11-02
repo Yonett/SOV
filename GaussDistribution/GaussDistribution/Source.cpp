@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-//#define _WRITE
+#define _WRITE
 
 #include <cstdlib>
 #include <ctime>
@@ -10,18 +10,17 @@
 
 using namespace std;
 
-const int N = 3e6;
+const int N = 300;
+const double EPS = 0.30;                 // clogging probability
 
-const double EPS = 0.40;                 // clogging probability
-
-const double PURE_TETTA = 0.2;           // shift for pure distribution
-const double PURE_LAMBDA = 0.5;          // scale for pure distribution
+const double PURE_TETTA = 1.0;           // shift for pure distribution
+const double PURE_LAMBDA = 1.25;          // scale for pure distribution
 
 const double SYM_TETTA = PURE_TETTA;     // shift for symmetrical clogging distribution
-const double SYM_LAMBDA = 2.0;           // scale for symmetrical clogging distribution
+const double SYM_LAMBDA = 3.0;           // scale for symmetrical clogging distribution
 
-const double ASYM_TETTA = 0.3;           // shift for asymmetrical clogging distribution
-const double ASYM_LAMBDA = PURE_LAMBDA;  // scale for asymmetrical clogging distribution
+const double ASYM_TETTA = 2.5;           // shift for asymmetrical clogging distribution
+const double ASYM_LAMBDA = PURE_LAMBDA + 0.25;  // scale for asymmetrical clogging distribution
 
 double ALPHA = 0.0;                      // trimmed mean parameter
 double DELTA = 0.0;                      // radical function power coef
@@ -116,8 +115,8 @@ double CalcRadicalFunc(double* values, double v, double v7, double K, double a, 
 double CalcMLE(double* values, double v, double v7, double K, double a, double lambda, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -1;
-	double m =  1;
+	double n = -5;
+	double m =  5;
 
 	double x1;
 	double x2;
@@ -139,8 +138,8 @@ double CalcMLE(double* values, double v, double v7, double K, double a, double l
 double CalcRadical(double* values, double v, double v7, double K, double a, double lambda, double eps)
 {
 	double gld = 1.6180339887498948482;
-	double n = -1;
-	double m =  1;
+	double n = -5;
+	double m =  5;
 
 	double x1;
 	double x2;
@@ -535,35 +534,35 @@ int main()
 	file.open("data_pure.csv");
 
 	for (int i = 0; i < N; i++)
-		file << pure_values[i] << ';' << endl;
+		file << pure_values[i] << ' ' << endl;
 
 	file.close();
 
 	file.open("data_sym_clog.csv");
 
 	for (int i = 0; i < N; i++)
-		file << sym_clog_values[i] << ';' << endl;
+		file << sym_clog_values[i] << ' ' << endl;
 
 	file.close();
 
 	file.open("data_sym_dirt.csv");
 
 	for (int i = 0; i < N; i++)
-		file << sym_dirt_values[i] << ';' << endl;
+		file << sym_dirt_values[i] << ' ' << endl;
 
 	file.close();
 
 	file.open("data_asym_clog.csv");
 
 	for (int i = 0; i < N; i++)
-		file << asym_clog_values[i] << ';' << endl;
+		file << asym_clog_values[i] << ' ' << endl;
 
 	file.close();
 
 	file.open("data_asym_dirt.csv");
 
 	for (int i = 0; i < N; i++)
-		file << asym_dirt_values[i] << ';' << endl;
+		file << asym_dirt_values[i] << ' ' << endl;
 
 	file.close();
 
