@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#define _WRITE
+//#define _WRITE
 
 #include <cstdlib>
 #include <ctime>
@@ -10,16 +10,16 @@
 
 using namespace std;
 
-const int N = 300;
+const int N = 3e5;
 const double EPS = 0.30;                 // clogging probability
 
-const double PURE_TETTA = 1.0;           // shift for pure distribution
-const double PURE_LAMBDA = 1.25;          // scale for pure distribution
+const double PURE_TETTA = 0.0;           // shift for pure distribution
+const double PURE_LAMBDA = 1;          // scale for pure distribution
 
 const double SYM_TETTA = PURE_TETTA;     // shift for symmetrical clogging distribution
 const double SYM_LAMBDA = 3.0;           // scale for symmetrical clogging distribution
 
-const double ASYM_TETTA = 2.5;           // shift for asymmetrical clogging distribution
+const double ASYM_TETTA = 1.5;           // shift for asymmetrical clogging distribution
 const double ASYM_LAMBDA = PURE_LAMBDA + 0.25;  // scale for asymmetrical clogging distribution
 
 double ALPHA = 0.0;                      // trimmed mean parameter
@@ -417,6 +417,63 @@ int main()
 	printf("Radical (DELTA = %e): %e\n\n\n", DELTA, RAD);
 
 #pragma endregion
+
+
+#pragma region Clean Sym Dirt
+
+	printf("Symmetrical dirt distribution (shift: %e, scale %e):\n\n", SYM_TETTA, SYM_LAMBDA);
+
+	y_ = CalcArithmeticMean(sym_clog_values);
+
+	printf("Arithmetic Mean: %e\n", y_);
+
+	D = CalcDispersion(sym_clog_values, y_);
+
+	printf("Dispersion: %e\n", D);
+
+	ac = CalcAsymmetryCoefficient(sym_clog_values, y_, D);
+
+	printf("Assymetry Coefficient: %e\n", ac);
+
+	kc = CalcKurtosisCoefficient(sym_clog_values, y_, D);
+
+	printf("Kurtosis Coefficient: %e\n", kc);
+
+	sm = CalcSampleMedian(sym_clog_values);
+
+	printf("Sample Median: %e\n", sm);
+
+	ALPHA = 0.05;
+	tm = CalcTrimmedMean(sym_clog_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	ALPHA = 0.10;
+	tm = CalcTrimmedMean(sym_clog_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	ALPHA = 0.15;
+	tm = CalcTrimmedMean(sym_clog_values);
+	printf("Trimmed Mean (ALPHA = %e): %e\n", ALPHA, tm);
+
+	MLE = CalcMLE(sym_clog_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+
+	printf("MLE: %e\n", MLE);
+
+	DELTA = 0.1;
+	RAD = CalcRadical(sym_clog_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 0.5;
+	RAD = CalcRadical(sym_clog_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n", DELTA, RAD);
+
+	DELTA = 1.0;
+	RAD = CalcRadical(sym_clog_values, v, v7, K, a, SYM_LAMBDA, 1e-5);
+	printf("Radical (DELTA = %e): %e\n\n\n", DELTA, RAD);
+
+#pragma endregion
+
+
 
 #pragma region Sym Dirt
 
